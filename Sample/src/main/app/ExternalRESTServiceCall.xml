@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:ws="http://www.mulesoft.org/schema/mule/ws" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ws http://www.mulesoft.org/schema/mule/ws/current/mule-ws.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="localhost" port="9091" basePath="/sample" doc:name="HTTP Listener Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="7001"  doc:name="HTTP Request Configuration"/>
+    <validation:config name="Validation_Configuration" doc:name="Validation Configuration"/>
+    <flow name="loginFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/auth" allowedMethods="POST" doc:name="HTTP"/>
+        <set-payload value="#[message.payload]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/country/get/all" doc:name="RESTServiceCall"/>
+        <response>
+            <validation:custom-validator config-ref="Validation_Configuration" class="org.login.exception.RequestValidator" doc:name="Validation"/>
+        </response>
+        <rollback-exception-strategy maxRedeliveryAttempts="0" doc:name="Rollback Exception Strategy">
+            <set-property propertyName="#[message.payload]" value="#[message.exception]" doc:name="Property"/>
+        </rollback-exception-strategy>
+    </flow>
+</mule>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <flow name="transformerFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/transform/{request_type}" allowedMethods="POST" doc:name="HTTP"/>
+        <logger level="INFO" message="#[message.inboundProperties['content-type']]" doc:name="Logger"/>
+        <choice doc:name="Choice" >
+        
+        	<when expression="#[message.inboundProperties['content-type'] == 'text/xml']">
+        		<logger level="INFO" message="Input is XML" doc:name="Logger"></logger>
+                <json:xml-to-json-transformer doc:name="XML to JSON"/>
+        	</when>
+        	<when expression="#[message.inboundProperties['content-type'] == 'application/json']">
+        		<logger level="INFO" message="Input is JSON" doc:name="Logger"/>
+        		<json:json-to-xml-transformer doc:name="JSON to XML"/>
+        	</when>
+        	<otherwise>
+        		<logger level="INFO" message="Input is JSON" doc:name="Logger"></logger>
+        	</otherwise>
+        </choice>
+        <catch-exception-strategy doc:name="Catch Exception Strategy"  enableNotifications="false">
+            <set-property propertyName="error_message" value="#[org.mule.util.ExceptionUtils.getRootCause(exception).getMessage()]" doc:name="Property"/>
+            <set-payload value="&lt;Exception&gt;&lt;message&gt;#[message.outboundProperties.error_message]&lt;/message&gt;&lt;/exception&gt;" encoding="ISO-8859-1" mimeType="text/xml" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    </flow>
+</mule>
